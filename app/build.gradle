@@ -57,6 +57,10 @@ dependencies {
     implementation 'com.google.mlkit:object-detection:16.2.3'
     implementation 'com.google.mlkit:object-detection-custom:16.3.1'
 
+    implementation 'com.google.mlkit:pose-detection:18.0.0-beta3'
+    // Pose detection with accurate models
+    implementation 'com.google.mlkit:pose-detection-accurate:18.0.0-beta3'
+
     // ARCore
     implementation 'com.google.ar:core:1.24.0'
 

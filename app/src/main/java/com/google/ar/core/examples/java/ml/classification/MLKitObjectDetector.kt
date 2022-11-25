@@ -18,12 +18,17 @@ package com.google.ar.core.examples.java.ml.classification
 
 import android.app.Activity
 import android.media.Image
+import android.util.Log
 import com.google.ar.core.examples.java.ml.classification.utils.ImageUtils
 import com.google.ar.core.examples.java.ml.classification.utils.VertexUtils.rotateCoordinates
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import com.google.mlkit.vision.pose.Pose
+import com.google.mlkit.vision.pose.PoseDetection
+import com.google.mlkit.vision.pose.PoseLandmark
+import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions
 import kotlinx.coroutines.tasks.asDeferred
 
 /**
@@ -37,14 +42,20 @@ class MLKitObjectDetector(context: Activity) : ObjectDetector(context) {
   // For the ML Kit default model, use the following:
   val builder = ObjectDetectorOptions.Builder()
 
-  private val options = builder
-    .setDetectorMode(CustomObjectDetectorOptions.SINGLE_IMAGE_MODE)
-    .enableClassification()
-    .enableMultipleObjects()
-    .build()
-  private val detector = ObjectDetection.getClient(options)
+//  private val options = builder
+//    .setDetectorMode(CustomObjectDetectorOptions.SINGLE_IMAGE_MODE)
+//    .enableClassification()
+//    .enableMultipleObjects()
+//    .build()
 
-  override suspend fun analyze(image: Image, imageRotation: Int): List<DetectedObjectResult> {
+  val options = AccuratePoseDetectorOptions.Builder()
+    .setDetectorMode(AccuratePoseDetectorOptions.SINGLE_IMAGE_MODE)
+    .build()
+
+  //  private val detector = ObjectDetection.getClient(options)
+  val detector = PoseDetection.getClient(options)
+
+  override suspend fun analyze(image: Image, imageRotation: Int) {
     // `image` is in YUV (https://developers.google.com/ar/reference/java/com/google/ar/core/Frame#acquireCameraImage()),
     val convertYuv = convertYuv(image)
 
@@ -53,13 +64,19 @@ class MLKitObjectDetector(context: Activity) : ObjectDetector(context) {
 
     val inputImage = InputImage.fromBitmap(rotatedImage, 0)
 
-    val mlKitDetectedObjects = detector.process(inputImage).asDeferred().await()
-    return mlKitDetectedObjects.mapNotNull { obj ->
-      val bestLabel = obj.labels.maxByOrNull { label -> label.confidence } ?: return@mapNotNull null
-      val coords = obj.boundingBox.exactCenterX().toInt() to obj.boundingBox.exactCenterY().toInt()
-      val rotatedCoordinates = coords.rotateCoordinates(rotatedImage.width, rotatedImage.height, imageRotation)
-      DetectedObjectResult(bestLabel.confidence, bestLabel.text, rotatedCoordinates)
-    }
+    val mlKitDetectedObjects = detector.process(inputImage).addOnSuccessListener {
+      // Or get specific PoseLandmarks individually. These will all be null if no person
+// was detected
+      val leftShoulder = it.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
+      val rightShoulder = it.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
+      Log.d("my_pose", "analyze: " + leftShoulder.toString() + " " + rightShoulder.toString())
+    }.asDeferred().await()
+//    return mlKitDetectedObjects.mapNotNull { obj ->
+//      val bestLabel = obj.labels.maxByOrNull { label -> label.confidence } ?: return@mapNotNull null
+//      val coords = obj.boundingBox.exactCenterX().toInt() to obj.boundingBox.exactCenterY().toInt()
+//      val rotatedCoordinates = coords.rotateCoordinates(rotatedImage.width, rotatedImage.height, imageRotation)
+//      DetectedObjectResult(bestLabel.confidence, bestLabel.text, rotatedCoordinates)
+//    }
   }
 
   @Suppress("USELESS_IS_CHECK")

@@ -165,7 +165,8 @@ class AppRenderer(val activity: MainActivity) : DefaultLifecycleObserver, Sample
         launch(Dispatchers.IO) {
           val cameraId = session.cameraConfig.cameraId
           val imageRotation = displayRotationHelper.getCameraSensorToDisplayRotation(cameraId)
-          objectResults = currentAnalyzer.analyze(cameraImage, imageRotation)
+          currentAnalyzer.analyze(cameraImage, imageRotation)
+//          objectResults = currentAnalyzer.analyze(cameraImage, imageRotation)
           cameraImage.close()
         }
       }
